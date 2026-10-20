@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" 
+        xmlns:h="http://www.w3.org/1999/xhtml" 
+        xmlns:ev="http://www.w3.org/2001/xml-events" 
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+        xmlns:jr="http://openrosa.org/javarosa" 
+        xmlns:odk="http://www.opendatakit.org/xforms">
+  <h:head>
+    <h:title>FMITI Industrial Cluster Audit Form</h:title>
+    <model>
+      <instance>
+        <data id="FMITI_CLUSTER_AUDIT_V1" version="1.0">
+          <meta>
+            <instanceID/>
+          </meta>
+          <enumerator_id/>
+          <rc_number/>
+          <cluster_name/>
+          <location/>
+          <operational_status>ACTIVE</operational_status>
+          <machinery_type>NOT_SPECIFIED</machinery_type>
+          <power_source>GRID</power_source>
+          <health_safety_rating>MODERATE</health_safety_rating>
+          <permanent_male>0</permanent_male>
+          <permanent_female>0</permanent_female>
+          <casual_male>0</casual_male>
+          <casual_female>0</casual_female>
+        </data>
+      </instance>
+
+      <!-- Bindings and Data Types -->
+      <bind nodeset="/data/meta/instanceID" type="string" jr:preload="uid"/>
+      <bind nodeset="/data/enumerator_id" type="string" required="true()"/>
+      <bind nodeset="/data/rc_number" type="string" required="true()"/>
+      <bind nodeset="/data/cluster_name" type="string" required="true()"/>
+      <bind nodeset="/data/location" type="geopoint" required="true()"/>
+      <bind nodeset="/data/operational_status" type="string"/>
+      <bind nodeset="/data/machinery_type" type="string"/>
+      <bind nodeset="/data/power_source" type="string"/>
+      <bind nodeset="/data/health_safety_rating" type="string"/>
+      <bind nodeset="/data/permanent_male" type="int"/>
+      <bind nodeset="/data/permanent_female" type="int"/>
+      <bind nodeset="/data/casual_male" type="int"/>
+      <bind nodeset="/data/casual_female" type="int"/>
+    </model>
+  </h:head>
+  <h:body>
+
+    <input ref="/data/enumerator_id">
+      <label>Enumerator Official ID:</label>
+    </input>
+
+    <input ref="/data/rc_number">
+      <label>Enterprise RC / CAC Number:</label>
+    </input>
+
+    <input ref="/data/cluster_name">
+      <label>Industrial Cluster Name:</label>
+    </input>
+
+    <input ref="/data/location">
+      <label>Capture Enterprise GPS Coordinates:</label>
+    </input>
+
+    <select1 ref="/data/operational_status">
+      <label>Operational Status:</label>
+      <item>
+        <label>Active / Operational</label>
+        <value>ACTIVE</value>
+      </item>
+      <item>
+        <label>Partially Active</label>
+        <value>PARTIAL</value>
+      </item>
+      <item>
+        <label>Inactive / Shutdown</label>
+        <value>INACTIVE</value>
+      </item>
+    </select1>
+
+    <input ref="/data/machinery_type">
+      <label>Primary Machinery / Processing Equipment Type:</label>
+    </input>
+
+    <select1 ref="/data/power_source">
+      <label>Primary Power Source:</label>
+      <item>
+        <label>National Grid</label>
+        <value>GRID</value>
+      </item>
+      <item>
+        <label>Diesel Generator</label>
+        <value>GENERATOR</value>
+      </item>
+      <item>
+        <label>Solar / Renewable</label>
+        <value>SOLAR</value>
+      </item>
+      <item>
+        <label>Hybrid</label>
+        <value>HYBRID</value>
+      </item>
+    </select1>
+
+    <select1 ref="/data/health_safety_rating">
+      <label>Health &amp; Safety Rating:</label>
+      <item>
+        <label>High Compliance</label>
+        <value>HIGH</value>
+      </item>
+      <item>
+        <label>Moderate Compliance</label>
+        <value>MODERATE</value>
+      </item>
+      <item>
+        <label>Low / Non-compliant</label>
+        <value>LOW</value>
+      </item>
+    </select1>
+
+    <input ref="/data/permanent_male">
+      <label>Permanent Staff (Male Count):</label>
+    </input>
+
+    <input ref="/data/permanent_female">
+      <label>Permanent Staff (Female Count):</label>
+    </input>
+
+    <input ref="/data/casual_male">
+      <label>Casual Staff (Male Count):</label>
+    </input>
+
+    <input ref="/data/casual_female">
+      <label>Casual Staff (Female Count):</label>
+    </input>
+
+  </h:body>
+</h:html>
