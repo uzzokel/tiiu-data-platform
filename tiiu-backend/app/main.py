@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.v1.endpoints import ingestion, enterprise, tier2_odk, analytics
+from app.api.v1.endpoints import ingestion, enterprise, tier2_odk, analytics, departments
 from app.database import engine
 from app.models.audit import Base
+from app.models.department import DepartmentKPIDB  # Ensures department table creation
 
 # Automatically create database tables on startup (creates tiiu.db if it doesn't exist)
 Base.metadata.create_all(bind=engine)
@@ -29,8 +30,9 @@ app.add_middleware(
 # Include API Routers
 app.include_router(ingestion.router)
 app.include_router(enterprise.router)
-app.include_router(tier2_odk.router)  # <--- ODK Collect Field Surveys & Audits
-app.include_router(analytics.router)  # <--- Analytics, Aggregations & Exports
+app.include_router(tier2_odk.router)    # <--- ODK Collect Field Surveys & Audits
+app.include_router(analytics.router)    # <--- Analytics, Aggregations & Exports
+app.include_router(departments.router)  # <--- Department Profiles & KPI Performance Tracking
 
 @app.get("/")
 async def root():
