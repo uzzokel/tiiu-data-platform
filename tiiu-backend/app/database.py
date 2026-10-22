@@ -2,14 +2,19 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from dotenv import load_dotenv
 
-load_dotenv()
+# Get the directory where database.py is located (e.g., .../tiiu-backend/app)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./tiiu.db")
+# Go up one level to tiiu-backend/ and store tiiu.db safely there
+DB_PATH = os.path.abspath(os.path.join(BASE_DIR, "../tiiu.db"))
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
 
-# check_same_thread=False is specifically needed for SQLite in FastAPI
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+print(f"📂 ACTIVE DATABASE PATH: {DB_PATH}")
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

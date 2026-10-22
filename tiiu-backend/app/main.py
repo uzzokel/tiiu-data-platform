@@ -4,7 +4,8 @@ from app.core.config import settings
 from app.api.v1.endpoints import ingestion, enterprise, tier2_odk, analytics, departments
 from app.database import engine
 from app.models.audit import Base
-from app.models.department import DepartmentKPIDB  # Ensures department table creation
+from app.models.department import DepartmentKPIDB
+from app.models.submission import UniversalSubmissionDB  # <--- CRITICAL: Import ODK model here
 
 # Automatically create database tables on startup (creates tiiu.db if it doesn't exist)
 Base.metadata.create_all(bind=engine)

@@ -16,10 +16,6 @@ router = APIRouter(prefix="/api/v1/tier2/odk", tags=["ODK Tier 2 Pipeline"])
 @router.api_route("/receiver", methods=["POST", "HEAD"])
 @router.api_route("/receiver/submission", methods=["POST", "HEAD"])
 async def receive_odk_submission(request: Request, db: Session = Depends(get_db)):
-    """
-    OpenRosa endpoint compatible with ODK Collect multipart/form-data submissions.
-    Extracts instanceID and form data securely.
-    """
     if request.method == "HEAD":
         return Response(status_code=204, headers={"X-OpenRosa-Version": "1.0"})
 
@@ -28,33 +24,34 @@ async def receive_odk_submission(request: Request, db: Session = Depends(get_db)
     parsed_data = {}
 
     try:
-        # Check if request is multipart/form-data (sent by ODK Collect)
         form = await request.form()
         if "xml_submission_file" in form:
             upload_file = form["xml_submission_file"]
             content = await upload_file.read()
             xml_str = content.decode("utf-8", errors="ignore")
             
-            # Parse XML payload from ODK
             try:
                 root = ET.fromstring(xml_str)
                 form_id = root.tag.split('}')[-1] if '}' in root.tag else root.tag
                 
-                # Extract all tags as key-value pairs
-                for child in root:
-                    tag_name = child.tag.split('}')[-1] if '}' in child.tag else child.tag
-                    if tag_name.lower() == "meta":
-                        for meta_child in child:
-                            meta_tag = meta_child.tag.split('}')[-1] if '}' in meta_child.tag else meta_child.tag
-                            if meta_tag.lower() in ["instanceid", "instance_id"]:
-                                instance_id = meta_child.text or instance_id
-                            parsed_data[meta_tag] = meta_child.text
-                    else:
-                        parsed_data[tag_name] = child.text
-            except Exception:
+                # Recursive helper to extract all nested XML values into a flat dictionary
+                def parse_element(elem, prefix=""):
+                    nonlocal instance_id
+                    for child in elem:
+                        tag_name = child.tag.split('}')[-1] if '}' in child.tag else child.tag
+                        full_key = f"{prefix}_{tag_name}" if prefix else tag_name
+                        if len(child) > 0:
+                            parse_element(child, full_key)
+                        else:
+                            parsed_data[full_key] = child.text
+                            if tag_name.lower() in ["instanceid", "instance_id"]:
+                                instance_id = child.text or instance_id
+
+                parse_element(root)
+            except Exception as xml_err:
+                parsed_data["parse_error"] = str(xml_err)
                 parsed_data["raw_xml"] = xml_str
         else:
-            # Fallback for JSON requests
             try:
                 json_data = await request.json()
                 parsed_data = json_data
@@ -66,19 +63,25 @@ async def receive_odk_submission(request: Request, db: Session = Depends(get_db)
     except Exception as e:
         parsed_data["error"] = str(e)
 
-    # Ensure uniqueness to prevent SQLite IntegrityError
+    # Ensure unique instance ID to satisfy SQLite unique constraints
     existing = db.query(UniversalSubmissionDB).filter_by(instance_id=instance_id).first()
     if existing:
         instance_id = f"{instance_id}_{uuid.uuid4().hex[:6]}"
 
-    submission = UniversalSubmissionDB(
-        form_id=form_id,
-        instance_id=instance_id,
-        data=parsed_data
-    )
-    db.add(submission)
-    db.commit()
-    db.refresh(submission)
+    try:
+        submission = UniversalSubmissionDB(
+            form_id=form_id,
+            instance_id=instance_id,
+            data=parsed_data
+        )
+        db.add(submission)
+        db.commit()
+        db.refresh(submission)
+        print(f"✅ DB INSERT SUCCESS: Created Submission ID #{submission.id} (Instance: {submission.instance_id})")
+    except Exception as db_err:
+        db.rollback()
+        print(f"❌ DB INSERT ERROR: {str(db_err)}")
+        raise HTTPException(status_code=500, detail=f"Database commit error: {str(db_err)}")
 
     return Response(
         content='<?xml version="1.0" encoding="UTF-8" ?><OpenRosaResponse xmlns="http://openrosa.org/http/response"><message startup="true">Success</message></OpenRosaResponse>',
@@ -89,13 +92,26 @@ async def receive_odk_submission(request: Request, db: Session = Depends(get_db)
 
 @router.get("/submissions")
 def get_odk_submissions(db: Session = Depends(get_db)):
+    """
+    Returns list of received ODK field submissions formatted for the Next.js Field Intelligence Hub dashboard.
+    """
     records = db.query(UniversalSubmissionDB).order_by(UniversalSubmissionDB.received_at.desc()).all()
     
     formatted_submissions = []
     for r in records:
         payload = r.data or {}
-        enumerator_id = payload.get("enumerator_id") or payload.get("enumerator") or payload.get("meta", {}).get("enumerator_id") or "ENUM-001"
-        location = payload.get("location") or payload.get("lga") or payload.get("state") or "Abuja, FCT"
+        enumerator_id = (
+            payload.get("enumerator_id") or 
+            payload.get("enumerator") or 
+            payload.get("meta_enumerator_id") or 
+            "ENUM-001"
+        )
+        location = (
+            payload.get("location") or 
+            payload.get("lga") or 
+            payload.get("state") or 
+            "Abuja, FCT"
+        )
         
         formatted_submissions.append({
             "id": r.id,
@@ -114,6 +130,36 @@ def get_odk_submissions(db: Session = Depends(get_db)):
     }
 
 
+@router.delete("/submissions/{submission_id}")
+def delete_odk_submission(submission_id: int, db: Session = Depends(get_db)):
+    """
+    Deletes a specific ODK form submission record by its database ID.
+    """
+    record = db.query(UniversalSubmissionDB).filter(UniversalSubmissionDB.id == submission_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Submission record not found")
+    
+    db.delete(record)
+    db.commit()
+    return {
+        "status": "success",
+        "message": f"Submission {submission_id} deleted successfully"
+    }
+
+
+@router.delete("/submissions")
+def delete_all_odk_submissions(db: Session = Depends(get_db)):
+    """
+    Deletes ALL ODK form submissions from the database.
+    """
+    deleted_count = db.query(UniversalSubmissionDB).delete()
+    db.commit()
+    return {
+        "status": "success",
+        "message": f"Deleted all {deleted_count} submission records successfully"
+    }
+
+
 @router.get("/export-excel")
 def export_odk_submissions_excel(db: Session = Depends(get_db)):
     records = db.query(UniversalSubmissionDB).order_by(UniversalSubmissionDB.received_at.desc()).all()
@@ -128,7 +174,8 @@ def export_odk_submissions_excel(db: Session = Depends(get_db)):
         }
         if isinstance(r.data, dict):
             for key, val in r.data.items():
-                row[str(key).replace("_", " ").title()] = str(val) if isinstance(val, (dict, list)) else val
+                clean_key = str(key).replace("_", " ").title()
+                row[clean_key] = val
         flattened_data.append(row)
 
     df = pd.DataFrame(flattened_data)
