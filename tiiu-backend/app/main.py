@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api.v1.endpoints import ingestion, enterprise, tier2_odk, analytics, departments
+from app.api.v1.endpoints import ingestion, enterprise, tier2_odk, analytics, departments, auth  # <--- Added auth import here
 from app.database import engine
 from app.models.audit import Base
 from app.models.department import DepartmentKPIDB
@@ -29,6 +29,7 @@ app.add_middleware(
 )
 
 # Include API Routers
+app.include_router(auth.router)         # <--- Added Auth login route
 app.include_router(ingestion.router)
 app.include_router(enterprise.router)
 app.include_router(tier2_odk.router)    # <--- ODK Collect Field Surveys & Audits

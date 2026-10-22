@@ -7,8 +7,10 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.submission import UniversalSubmissionDB
+from app.core.security import require_roles  # Security helper import
 
 router = APIRouter(prefix="/api/v1/tier2/odk", tags=["ODK Tier 2 Pipeline"])
+
 
 @router.api_route("", methods=["POST", "HEAD"])
 @router.api_route("/", methods=["POST", "HEAD"])
@@ -16,6 +18,10 @@ router = APIRouter(prefix="/api/v1/tier2/odk", tags=["ODK Tier 2 Pipeline"])
 @router.api_route("/receiver", methods=["POST", "HEAD"])
 @router.api_route("/receiver/submission", methods=["POST", "HEAD"])
 async def receive_odk_submission(request: Request, db: Session = Depends(get_db)):
+    """
+    OpenRosa ODK Receiver Endpoint.
+    UNPROTECTED: Kept completely open so field enumerators' ODK Collect apps can submit data without authentication blocks.
+    """
     if request.method == "HEAD":
         return Response(status_code=204, headers={"X-OpenRosa-Version": "1.0"})
 
@@ -130,10 +136,14 @@ def get_odk_submissions(db: Session = Depends(get_db)):
     }
 
 
-@router.delete("/submissions/{submission_id}")
+@router.delete(
+    "/submissions/{submission_id}",
+    dependencies=[Depends(require_roles(["super_admin"]))]
+)
 def delete_odk_submission(submission_id: int, db: Session = Depends(get_db)):
     """
     Deletes a specific ODK form submission record by its database ID.
+    PROTECTED: Requires 'super_admin' role.
     """
     record = db.query(UniversalSubmissionDB).filter(UniversalSubmissionDB.id == submission_id).first()
     if not record:
@@ -147,10 +157,14 @@ def delete_odk_submission(submission_id: int, db: Session = Depends(get_db)):
     }
 
 
-@router.delete("/submissions")
+@router.delete(
+    "/submissions",
+    dependencies=[Depends(require_roles(["super_admin"]))]
+)
 def delete_all_odk_submissions(db: Session = Depends(get_db)):
     """
     Deletes ALL ODK form submissions from the database.
+    PROTECTED: Requires 'super_admin' role.
     """
     deleted_count = db.query(UniversalSubmissionDB).delete()
     db.commit()
@@ -160,8 +174,15 @@ def delete_all_odk_submissions(db: Session = Depends(get_db)):
     }
 
 
-@router.get("/export-excel")
+@router.get(
+    "/export-excel",
+    dependencies=[Depends(require_roles(["super_admin", "department_officer", "parastatal_officer"]))]
+)
 def export_odk_submissions_excel(db: Session = Depends(get_db)):
+    """
+    Exports ODK submissions to an Excel file.
+    PROTECTED: Requires 'super_admin', 'department_officer', or 'parastatal_officer' role.
+    """
     records = db.query(UniversalSubmissionDB).order_by(UniversalSubmissionDB.received_at.desc()).all()
     
     flattened_data = []

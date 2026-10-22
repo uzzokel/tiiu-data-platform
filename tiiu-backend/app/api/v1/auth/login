@@ -1,0 +1,12 @@
+@router.post("/login")
+def login(credentials: LoginSchema, db: Session = Depends(get_db)):
+    # Authenticate user from database...
+    user_email = credentials.email
+    db_role = user_email_to_role_mapping.get(user_email, "field_auditor")
+    
+    # Resolve role (Tier 1 override check)
+    final_role = resolve_user_role(user_email, db_role)
+    
+    # Create token containing the verified role
+    access_token = create_access_token(data={"sub": user_email, "role": final_role})
+    return {"access_token": access_token, "token_type": "bearer", "role": final_role}
