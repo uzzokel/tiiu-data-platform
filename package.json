@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "powerbi-client": "^2.25.0",
+    "powerbi-client-react": "^2.0.2",
+    "recharts": "^3.10.1"
+  }
+}

@@ -120,6 +120,7 @@ def get_department_structure():
 
 
 @router.post("/kpi")
+@router.post("/kpis")  # <--- FIXED: Added plural endpoint alias to match frontend tiiuApi calls
 def create_department_kpi(payload: KPISubmissionSchema, db: Session = Depends(get_db)):
     """
     Creates and logs a new Departmental KPI entry into the database.
@@ -145,6 +146,7 @@ def create_department_kpi(payload: KPISubmissionSchema, db: Session = Depends(ge
 
 
 @router.delete("/kpi/{kpi_id}")
+@router.delete("/kpis/{kpi_id}")  # <--- FIXED: Added plural alias for deletions
 def delete_department_kpi(kpi_id: int, db: Session = Depends(get_db)):
     """
     Deletes a specific departmental KPI record from SQLite by ID.
