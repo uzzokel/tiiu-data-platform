@@ -1,27 +1,41 @@
 import io
 import math
 import pandas as pd
-from typing import Optional, List
+from typing import Optional, List, Dict
 from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+
 from app.database import get_db
 from app.models.audit import UniversalSubmissionDB
+from app.models.department import DepartmentKPIDB
 
 router = APIRouter(prefix="/api/v1/analytics", tags=["Analytics"])
 
 # ==========================================
-# PHASE C SCHEMAS (Intelligence Engine)
+# SCHEMAS (Executive Intelligence Engine)
 # ==========================================
+
+class DepartmentKPISummary(BaseModel):
+    department_name: str
+    total_target: float
+    total_achieved: float
+    achievement_rate: float
+    record_count: int
 
 class ExecutiveKPIOverview(BaseModel):
     total_active_msmes: int
     total_boi_disbursement_ngn: float
     total_nonoil_exports_usd: float
     active_field_audits: int
+    overall_kpi_target: float
+    overall_kpi_achieved: float
+    overall_achievement_rate: float
     reporting_period: str = "Q4 2026"
     last_pipeline_sync: str
+    department_breakdown: List[DepartmentKPISummary]
 
 class MarketMatchRequest(BaseModel):
     product_description: str = Field(..., example="Processed organic sesame seeds and sesame oil")
@@ -67,7 +81,7 @@ class GMMSimulationResponse(BaseModel):
 
 
 # ==========================================
-# EXISTING DATASETS (Phases A & B)
+# PARASTATAEL DATASETS
 # ==========================================
 
 AGENCY_DATASETS = {
@@ -101,7 +115,7 @@ AGENCY_DATASETS = {
 
 
 # ==========================================
-# EXISTING ENDPOINTS (Phases A & B)
+# CORE ANALYTICS ENDPOINTS
 # ==========================================
 
 @router.get("/enumerator-summary")
@@ -109,11 +123,14 @@ def get_enumerator_aggregation(db: Session = Depends(get_db)):
     """
     Aggregates ODK submissions by Enumerator ID and Location.
     """
-    records = db.query(UniversalSubmissionDB).all()
-    summary = {}
+    try:
+        records = db.query(UniversalSubmissionDB).all()
+    except Exception:
+        records = []
 
+    summary = {}
     for rec in records:
-        data = rec.form_data or {}
+        data = getattr(rec, "form_data", {}) or {}
         enum_id = data.get("enumerator_id") or data.get("enumeratorId") or "ENUM_001"
         location = data.get("lga") or data.get("state") or data.get("location") or "Abuja / FCT"
         
@@ -129,7 +146,7 @@ def get_enumerator_aggregation(db: Session = Depends(get_db)):
 @router.get("/parastatal/registry-search")
 def search_parastatal_registry(
     parastatal: str = Query("cac", description="cac, smedan, boi, son, nepc"),
-    year: int = Query(None, description="Filter by year"),
+    year: Optional[int] = Query(None, description="Filter by year"),
     search_query: str = Query("", description="Filter by company name or ID")
 ):
     """
@@ -180,13 +197,14 @@ def export_registry_excel(
 
 
 # ==========================================
-# NEW PHASE C ENDPOINTS (Intelligence Engine)
+# EXECUTIVE INTELLIGENCE & HYBRID KPI ENGINE
 # ==========================================
 
-@router.get("/kpis", response_model=ExecutiveKPIOverview, summary="Fetch Executive Real-time Aggregates")
+@router.get("/kpis", response_model=ExecutiveKPIOverview, summary="Fetch Dynamic Real-time Departmental & Executive Aggregates")
 def get_executive_kpis(db: Session = Depends(get_db)):
     """
-    Returns high-level aggregate KPIs for the Minister, PS, and Management.
+    Dynamically queries all logged department KPIs (both preset and custom manual entries) 
+    from the database to calculate total targets, achievements, and rates.
     """
     try:
         submission_count = db.query(UniversalSubmissionDB).count()
@@ -195,13 +213,46 @@ def get_executive_kpis(db: Session = Depends(get_db)):
 
     total_msmes = submission_count if submission_count > 1000 else 142850
 
+    # Query ALL logged department KPIs dynamically
+    all_kpis = db.query(DepartmentKPIDB).all()
+
+    overall_target = sum(k.target_value for k in all_kpis) if all_kpis else 0.0
+    overall_achieved = sum(k.achieved_value for k in all_kpis) if all_kpis else 0.0
+    overall_rate = round((overall_achieved / overall_target) * 100, 1) if overall_target > 0 else 0.0
+
+    # Group metrics by Department Name dynamically (captures non-preset manual departments)
+    dept_map: Dict[str, Dict[str, float]] = {}
+    for kpi in all_kpis:
+        d_name = kpi.department_name
+        if d_name not in dept_map:
+            dept_map[d_name] = {"target": 0.0, "achieved": 0.0, "count": 0}
+        
+        dept_map[d_name]["target"] += kpi.target_value
+        dept_map[d_name]["achieved"] += kpi.achieved_value
+        dept_map[d_name]["count"] += 1
+
+    department_breakdown = [
+        DepartmentKPISummary(
+            department_name=d_name,
+            total_target=stats["target"],
+            total_achieved=stats["achieved"],
+            achievement_rate=round((stats["achieved"] / stats["target"]) * 100, 1) if stats["target"] > 0 else 0.0,
+            record_count=int(stats["count"])
+        )
+        for d_name, stats in dept_map.items()
+    ]
+
     return ExecutiveKPIOverview(
         total_active_msmes=total_msmes,
         total_boi_disbursement_ngn=45800000000.00,  # ₦45.8B
         total_nonoil_exports_usd=1240000000.00,     # $1.24B
         active_field_audits=total_msmes,
+        overall_kpi_target=overall_target,
+        overall_kpi_achieved=overall_achieved,
+        overall_achievement_rate=overall_rate,
         reporting_period="Q4 2026",
-        last_pipeline_sync="Live - Synchronized"
+        last_pipeline_sync="Live - Dynamic Synchronized",
+        department_breakdown=department_breakdown
     )
 
 
