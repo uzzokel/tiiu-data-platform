@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import inspect, text  # <--- Added for SQLite column auto-patching
+from sqlalchemy import inspect, text  # Added for SQLite column auto-patching
 from app.core.config import settings
-from app.api.v1.endpoints import ingestion, enterprise, tier2_odk, analytics, departments, auth, parastatals  # <--- Clean, single import including parastatals
+from app.api.v1.endpoints import ingestion, enterprise, tier2_odk, analytics, departments, auth, parastatals  # Fixed: parastatals
 from app.database import engine
 from app.models.audit import Base
-from app.models.department import DepartmentKPIDB, DepartmentReportDB  # <--- Imported report model here
-from app.models.submission import UniversalSubmissionDB  # <--- CRITICAL: Import ODK model here
+from app.models.department import DepartmentKPIDB, DepartmentReportDB  # Imported report model here
+from app.models.submission import UniversalSubmissionDB  # CRITICAL: Import ODK model here
 
 # Automatically create database tables on startup (creates tiiu.db if it doesn't exist)
 Base.metadata.create_all(bind=engine)
@@ -53,13 +53,13 @@ app.add_middleware(
 )
 
 # Include API Routers
-app.include_router(auth.router)         # <--- Added Auth login route
+app.include_router(auth.router)         # Added Auth login route
 app.include_router(ingestion.router)
 app.include_router(enterprise.router)
-app.include_router(tier2_odk.router)    # <--- ODK Collect Field Surveys & Audits
-app.include_router(analytics.router)    # <--- Analytics, Aggregations & Exports
-app.include_router(departments.router)  # <--- Department Profiles & KPI Performance Tracking
-app.include_router(parastatals.router)  # <--- CRITICAL: Parastatals Registry, Metrics & Excel Export
+app.include_router(tier2_odk.router)    # ODK Collect Field Surveys & Audits
+app.include_router(analytics.router)    # Analytics, Aggregations & Exports
+app.include_router(departments.router)  # Department Profiles & KPI Performance Tracking
+app.include_router(parastatals.router)  # CRITICAL: Parastatals Registry, Metrics & Excel Export
 
 # Direct fallback endpoints to resolve frontend 404s for submissions and enumerators
 @app.get("/api/submissions")
