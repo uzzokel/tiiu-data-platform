@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import PowerBIEmbed from "@/components/PowerBIEmbed";
 import { 
   fetchSubmissions,
   uploadDepartmentReport,
@@ -205,7 +206,6 @@ export default function ODKAnalytics() {
 
   // Analytics Toggle State
   const [analyticsView, setAnalyticsView] = useState<"powerbi" | "streamlit">("powerbi");
-  const powerBiUrl = process.env.NEXT_PUBLIC_POWERBI_EMBED_URL || "";
   const streamlitUrl = process.env.NEXT_PUBLIC_STREAMLIT_URL || "http://localhost:8501";
 
   // Policy Reporting State
@@ -308,7 +308,7 @@ export default function ODKAnalytics() {
         </div>
       </div>
 
-      {/* 2. Key ODK Metrics (Dynamically Calculated from Submissions Data Table) */}
+      {/* 2. Key ODK Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <p className="text-[10px] font-extrabold uppercase text-slate-400">Total Submissions Received</p>
@@ -639,21 +639,18 @@ export default function ODKAnalytics() {
               </button>
             </div>
           </div>
-          <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm h-[600px]">
+
+          <div className="w-full">
             {analyticsView === "powerbi" ? (
-              powerBiUrl ? (
-                <iframe title="PowerBI Report" src={powerBiUrl} className="w-full h-full rounded-2xl border-0" allowFullScreen />
-              ) : (
-                <div className="w-full h-full rounded-2xl bg-slate-900 text-emerald-400 p-8 flex flex-col justify-center items-center text-center space-y-4">
-                  <span className="text-4xl">📊</span>
-                  <h4 className="text-lg font-bold text-white">Power BI Canvas Ready</h4>
-                  <p className="text-xs text-slate-400 max-w-md">
-                    Set <code className="bg-slate-800 px-2 py-1 rounded text-emerald-300">NEXT_PUBLIC_POWERBI_EMBED_URL</code> in your <code className="bg-slate-800 px-2 py-1 rounded text-emerald-300">.env.local</code> file.
-                  </p>
-                </div>
-              )
+              <PowerBIEmbed 
+                title="ODK Field Intelligence & Telemetry Analytics"
+                reportKey="odk"
+                height="650px"
+              />
             ) : (
-              <iframe title="Streamlit ML Model" src={`${streamlitUrl}/?view=ml`} className="w-full h-full rounded-2xl border-0" />
+              <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm h-[650px]">
+                <iframe title="Streamlit ML Model" src={`${streamlitUrl}/?view=ml`} className="w-full h-full rounded-2xl border-0" />
+              </div>
             )}
           </div>
         </div>
@@ -718,97 +715,62 @@ export default function ODKAnalytics() {
                     onClick={handlePrintPdf}
                     className="bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow flex items-center justify-center gap-2"
                   >
-                    <span>📄</span>
-                    <span>Print / Save PDF</span>
+                    <span>🖨️</span>
+                    <span>Print / PDF Export</span>
                   </button>
                 </div>
               </div>
             </div>
-
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h3 className="text-sm font-bold text-slate-900">📤 Upload Field & Policy Reports</h3>
-              <p className="text-xs text-slate-500">Upload PDF briefs, Excel spreadsheets, or DOCX documents to tiiu.db.</p>
-
-              {reportUploadStatus && (
-                <div className="p-3 text-xs font-semibold rounded-xl bg-slate-100 border border-slate-200">
-                  {reportUploadStatus}
-                </div>
-              )}
-
-              <form onSubmit={handleReportUploadSubmit} className="space-y-3 text-xs">
-                <input
-                  type="file"
-                  accept=".pdf, .docx, .xlsx, .csv"
-                  onChange={(e) => setReportFile(e.target.files?.[0] || null)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs"
-                />
-                <button
-                  type="submit"
-                  disabled={uploadingReport || !reportFile}
-                  className="w-full bg-emerald-900 hover:bg-emerald-800 text-white font-bold py-2.5 rounded-xl transition shadow disabled:opacity-50"
-                >
-                  {uploadingReport ? "Uploading Document..." : "Upload Document"}
-                </button>
-              </form>
-            </div>
           </div>
 
           <div className="space-y-6">
-            <div className="bg-white rounded-3xl p-8 border border-slate-300 shadow-md space-y-4 font-serif text-slate-900">
-              <div className="text-center border-b-2 border-emerald-900 pb-4">
-                <h4 className="text-base font-extrabold uppercase text-emerald-950 font-sans">
-                  Federal Ministry of Industry, Trade and Investment
-                </h4>
-                <p className="text-xs font-sans font-semibold text-slate-600 mt-0.5">
-                  Technical Audit & Industry Intelligence Unit (TIIU)
-                </p>
-                <span className="inline-block bg-slate-100 text-slate-700 text-[10px] font-mono px-3 py-1 rounded-full mt-2 font-sans">
-                  CONFIDENTIAL MINISTERIAL BRIEFING • {new Date().toISOString().slice(0, 10)}
-                </span>
-              </div>
-
-              <div className="space-y-4 text-xs leading-relaxed font-sans">
-                <div>
-                  <h5 className="font-bold text-[11px] text-emerald-900 uppercase tracking-wider">1. Executive Summary</h5>
-                  <p className="text-slate-700 mt-1">{executiveSummary}</p>
-                </div>
-
-                <div>
-                  <h5 className="font-bold text-[11px] text-emerald-900 uppercase tracking-wider">2. Strategic Recommendations</h5>
-                  <p className="text-slate-700 mt-1">{policyRecommendations}</p>
-                </div>
-
-                <div>
-                  <h5 className="font-bold text-[11px] text-emerald-900 uppercase tracking-wider">3. Priority Directives</h5>
-                  <p className="text-slate-700 mt-1 whitespace-pre-line">{priorityDirectives}</p>
-                </div>
-              </div>
-            </div>
-
             <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
-              <h3 className="text-sm font-bold text-slate-900">📥 Download Center & Report Repository ({departmentReports.length})</h3>
-              <div className="max-h-60 overflow-y-auto space-y-2">
+              <h3 className="text-sm font-bold text-slate-900">📂 Departmental Document Repository</h3>
+              
+              <form onSubmit={handleReportUploadSubmit} className="space-y-3 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-600 mb-1">Upload Report (PDF / Word / Excel)</label>
+                  <input
+                    type="file"
+                    onChange={(e) => setReportFile(e.target.files?.[0] || null)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs"
+                  />
+                </div>
+                {reportUploadStatus && (
+                  <p className="text-xs font-semibold text-emerald-700">{reportUploadStatus}</p>
+                )}
+                <button
+                  type="submit"
+                  disabled={uploadingReport}
+                  className="w-full bg-emerald-900 hover:bg-emerald-800 text-white font-bold py-2.5 rounded-xl transition"
+                >
+                  {uploadingReport ? "Uploading..." : "Upload Document"}
+                </button>
+              </form>
+
+              <div className="border-t border-slate-200 pt-4 space-y-2 max-h-[220px] overflow-y-auto">
+                <h4 className="text-xs font-bold text-slate-800">Uploaded Files ({departmentReports.length})</h4>
                 {departmentReports.length === 0 ? (
-                  <p className="text-xs text-slate-400 text-center py-4 font-mono">No reports uploaded yet. Use the uploader above.</p>
+                  <p className="text-[11px] text-slate-400 font-mono">No repository documents uploaded yet.</p>
                 ) : (
                   departmentReports.map((rep) => (
-                    <div key={rep.id} className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-200 text-xs">
+                    <div key={rep.id} className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs">
                       <div>
-                        <p className="font-bold text-slate-900">{rep.filename}</p>
-                        <span className="text-[10px] text-slate-500 font-mono">{rep.department_name} • {rep.uploaded_at}</span>
+                        <p className="font-bold text-slate-900 truncate max-w-[180px]">{rep.filename}</p>
+                        <p className="text-[10px] text-slate-400">{rep.uploaded_at?.slice(0, 10)}</p>
                       </div>
                       <div className="flex gap-2">
                         <a
                           href={getDepartmentReportDownloadUrl(rep.id)}
                           target="_blank"
                           rel="noreferrer"
-                          className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-3 py-1.5 rounded-xl hover:bg-emerald-200"
+                          className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-lg text-[10px] font-bold border border-emerald-200"
                         >
                           Download
                         </a>
                         <button
                           onClick={() => handleDeleteReportDoc(rep.id)}
-                          className="bg-red-50 text-red-600 text-[10px] font-bold px-3 py-1.5 rounded-xl border border-red-200 hover:bg-red-100"
+                          className="bg-red-50 text-red-600 px-2.5 py-1 rounded-lg text-[10px] font-bold border border-red-200"
                         >
                           Delete
                         </button>
