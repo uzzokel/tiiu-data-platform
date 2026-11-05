@@ -1,0 +1,42 @@
+export const FMITI_AGENCIES = [
+  { code: "cac", name: "Corporate Affairs Commission (CAC)", category: "Business Regulation, Standards & Compliance", icon: "🏢" },
+  { code: "boi", name: "Bank of Industry (BOI)", category: "Investment & Enterprise Promotion", icon: "💳" },
+  { code: "smedan", name: "Small & Medium Enterprises Development Agency (SMEDAN)", category: "Investment & Enterprise Promotion", icon: "🌱" },
+  { code: "nepc", name: "Nigerian Export Promotion Council (NEPC)", category: "Trade, Export & Free Zone Regulations", icon: "🌐" },
+  { code: "son", name: "Standards Organisation of Nigeria (SON)", category: "Business Regulation, Standards & Compliance", icon: "📜" },
+  { code: "nipc", name: "Nigerian Investment Promotion Commission (NIPC)", category: "Investment & Enterprise Promotion", icon: "📈" },
+  { code: "nepza", name: "Nigeria Export Processing Zones Authority (NEPZA)", category: "Trade, Export & Free Zone Regulations", icon: "⚡" },
+  { code: "ogfza", name: "Oil and Gas Free Zones Authority (OGFZA)", category: "Trade, Export & Free Zone Regulations", icon: "🛢️" },
+  { code: "nce", name: "Nigeria Commodities Exchange (NCE)", category: "Trade, Export & Free Zone Regulations", icon: "🌾" },
+  { code: "frcn", name: "Financial Reporting Council of Nigeria (FRCN)", category: "Business Regulation, Standards & Compliance", icon: "📑" },
+  { code: "cld", name: "Commercial Law Department (IP Registry)", category: "Business Regulation, Standards & Compliance", icon: "💡" },
+  { code: "itf", name: "Industrial Training Fund (ITF)", category: "Industrial Training & Capacity Building", icon: "🎓" },
+  { code: "nsdc", name: "National Sugar Development Council (NSDC)", category: "Industrial Training & Capacity Building", icon: "🧪" },
+  { code: "naddc", name: "National Automotive Design and Development Council (NADDC)", category: "Industrial Training & Capacity Building", icon: "🚗" },
+  { code: "litfcmb", name: "Lagos International Trade Fair Complex Board (LITFCMB)", category: "Infrastructure Management", icon: "🏛️" },
+  { code: "tbsmb", name: "Tafawa Balewa Square Management Board (TBSMB)", category: "Infrastructure Management", icon: "🏟️" }
+];
+
+export const FMITI_DEPARTMENTS = [
+  "Industrial Development Department",
+  "Industrial Inspectorate Department",
+  "Department of Weights and Measures",
+  "Department of Trade",
+  "Trademarks",
+  "Patents and Designs",
+  "Chemical and Non-Petrochemical Department",
+  "Federal Procedure Inspectorate Service",
+  "Commodities and Export",
+  "Investment Promotion",
+  "Policy, Planning, Research & Statistics",
+  "Account and Finance",
+  "Reform Coordination & Service Improvement",
+  "Internal Audit",
+  "Special Duties",
+  "Human Resource Management",
+  "General Service",
+  "Procurement",
+  "Legal Service",
+  "Press and Public Relation Department",
+  "Other (Custom Department)"
+];
