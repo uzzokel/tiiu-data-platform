@@ -206,7 +206,7 @@ export default function ODKAnalytics() {
 
   // Analytics Toggle State
   const [analyticsView, setAnalyticsView] = useState<"powerbi" | "streamlit">("powerbi");
-  const streamlitUrl = process.env.NEXT_PUBLIC_STREAMLIT_URL || "http://localhost:8501";
+  const streamlitUrl = process.env.NEXT_PUBLIC_STREAMLIT_URL || "https://boston-house-price-prediction-6n58.onrender.com";
 
   // Policy Reporting State
   const [executiveSummary, setExecutiveSummary] = useState(
